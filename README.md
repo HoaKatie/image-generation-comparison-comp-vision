@@ -20,9 +20,9 @@ The full plan (protocol, metrics, rubric mapping, open decisions, timeline) is i
 
 | File / item | Status | What is missing |
 |---|---|---|
-| `results/` | ❌ **not created** | The experiments have not been run yet. Run them yourselves by following [docs/RUNNING_EXPERIMENTS.md](docs/RUNNING_EXPERIMENTS.md): about 1 h for the main experiment and 45 min for the ablations. |
-| [`report/report.md`](report/report.md) §4–6 | ⚠️ **template** | §1–3 (problem, method, implementation) are written. §4–6 have **[FILL IN]** places to complete from `results/`. Team names are also still missing. |
-| [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) §6 | ⚠️ open | 3 team decisions that depend on the results: number of epochs, primary FID, optional extension. |
+| `results/`, `runs/` | ✅ done | Main experiment (3 seeds) and ablations (seed 0). Every run's logs, samples, metrics, figures and final model are committed. To reproduce: [docs/RUNNING_EXPERIMENTS.md](docs/RUNNING_EXPERIMENTS.md). |
+| [`report/report.md`](report/report.md) | ⚠️ **draft, needs team review** | All sections written from `results/` (6 pages + references). Team names are still missing. §5 Limitations assumes "lead with FID-classifier" (decision 3): change it if the team decides otherwise. |
+| [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) §6 | ⚠️ open | 2 team decisions left: primary FID and optional extension. Epochs: decided, keep 30. |
 
 Everything else is implemented and tested (`python -m pytest`, 49 tests): data, models,
 `vae_loss`, training, evaluation, the real-vs-real baseline, analysis, and the scripts. The
@@ -101,11 +101,14 @@ python -m src.evaluate  --config configs/gan.yaml --set seed=1 --all-epochs --qu
 | `runs/<run>/train_log.csv` | per-epoch losses (GAN: also D(x), D(G(z))) |
 | `runs/<run>/samples/` | samples from the same fixed latent vectors after every epoch |
 | `runs/<run>/eval/epoch_XXX/` | `metrics.json` + samples, success / failure cases, interpolation, nearest neighbours, reconstructions |
+| `runs/<run>/checkpoints/epoch_030.pt` | the final model (intermediate checkpoints stay local) |
 | `results/main_results.md` | main table, mean ± std over seeds |
 | `results/*.png` | report figures: precision–recall, mode coverage, sharpness, learning curves, ablations |
 | `results/all_runs.csv` | every final metric of every run |
 
-`runs/` and `data/` are git-ignored. Commit `results/` once the final runs are done.
+`runs/` **is committed** (about 8 MB per run), so the whole team can inspect every run and load
+the final models without retraining. Only the Inception feature cache and the intermediate
+checkpoints are git-ignored. `data/` is git-ignored (downloaded automatically).
 
 ## Repository layout
 
@@ -122,6 +125,7 @@ src/
   analysis.py       aggregates all runs into tables and figures
 scripts/            run_main.sh, run_ablation.sh, smoke_test.sh
 tests/              shape/fairness checks, loss tests, metric sanity checks
+runs/               one folder per run: config, loss log, per-epoch samples, metrics, figures, final model
 results/            report tables + figures (created by src.analysis, then committed)
 report/report.md    project report (pandoc -> PDF/DOCX, see the comment at its top)
 docs/PROJECT_PLAN.md

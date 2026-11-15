@@ -155,17 +155,8 @@ runs the whole pipeline end to end on a toy dataset.
 
 **Training.** Each model trains for 30 epochs: 468 mini-batches of 128 images per epoch,
 14,040 updates in total. We use seeds 0, 1 and 2 on a laptop GPU (Apple silicon, PyTorch MPS).
-A VAE run takes about 5 minutes and a DCGAN run about 8, because the GAN needs two
+A VAE run takes about 4 minutes and a DCGAN run about 6.5, because the GAN needs two
 forward/backward passes per step.
-
-<!-- ======================================================================================
-     §4–§6 are a TEMPLATE until the experiments are run (docs/RUNNING_EXPERIMENTS.md).
-     Replace every **[FILL IN: ...]** with numbers from results/ and write the verdicts
-     from what the data actually shows. A hypothesis that turns out false is fine, as long
-     as you explain why. Delete these comments before submitting.
-     Page budget (guidelines: 4–6 pages excluding references): §1–3 take ≈ 2.7 pages, so
-     §4–6 must fit in ≈ 3 pages INCLUDING the 5 figures. Check with: bash report/build.sh
-     ====================================================================================== -->
 
 ## 4. Experiments and results
 
@@ -177,93 +168,141 @@ We run four experiments:
 * **E3, latent size.** $d\in\{8,32,128\}$ for both models.
 * **E4, KL weight.** $\beta\in\{0.5,1,4\}$ for the VAE.
 
-E3 and E4 use **[FILL IN: 1 or 3]** seed(s).
+E3 and E4 use one seed (seed 0); their $d=32$, $\beta=1$ entries are the E1 means.
 
 ### 4.1 Main comparison (E1)
 
-<!-- Paste results/main_results.md here, keeping only the most informative columns
-     (suggestion: FID-Inc, FID-clf, Precision-clf, Recall-clf, Modes, Class KL, Laplacian var,
-     HF ratio, Interp. CV). Keep the real-data row: it is what makes the numbers readable. -->
+| Model | FID-Inc ↓ | FID-clf ↓ | Prec. ↑ | Recall ↑ | Class KL ↓ | Lapl. var | HF ratio | Interp. CV ↓ |
+|---|---|---|---|---|---|---|---|---|
+| VAE | 56.9 ± 1.6 | 20.7 ± 1.2 | 0.695 ± 0.008 | 0.489 ± 0.007 | 0.22 ± 0.01 | 0.038 ± 0.001 | 0.034 ± 0.001 | **0.51 ± 0.01** |
+| DCGAN | **13.3 ± 0.5** | **1.29 ± 0.05** | **0.852 ± 0.008** | **0.854 ± 0.001** | **0.022 ± 0.005** | **0.146 ± 0.001** | **0.100 ± 0.004** | 0.69 ± 0.02 |
+| Real data | 2.40 | 0.034 | 0.903 | 0.893 | 0.005 | 0.150 | 0.104 | – |
 
-| Model | FID-Inc ↓ | FID-clf ↓ | Prec. ↑ | Recall ↑ | Modes ↑ | Class KL ↓ | Lapl. var | HF ratio | Interp. CV ↓ |
-|---|---|---|---|---|---|---|---|---|---|
-| VAE | [FILL IN] | | | | | | | | |
-| DCGAN | [FILL IN] | | | | | | | | |
-| Real data (train vs. test) | [FILL IN] | | | | 10 | | | | – |
+: **Table 3.** Main results, mean ± std over 3 seeds (precision/recall in the classifier
+space). Last row: the same metrics on 10,000 real training images. Bold = better model.
+Every run covers all 10 classes.
 
-: **Table 3.** Main results: mean ± std over 3 seeds. Precision and recall are computed in
-the classifier feature space. The last row runs the same metrics on real training images.
+![**Figure 1.** Random samples from the same latent vectors (not cherry-picked). Left: VAE. Right: DCGAN.](../results/qualitative_samples.png){width=50%}
 
-![Random samples from the same latent vectors (not cherry-picked). Left: VAE. Right: DCGAN.](../results/qualitative_samples.png){width=70%}
+![**Figure 2.** Precision vs. recall: one dot per seed; the star is the real-data baseline.](../results/precision_recall.png){width=45%}
 
-![Precision vs. recall: one dot per seed; the star is the real-data baseline.](../results/precision_recall.png){width=60%}
-
-**[FILL IN: 3–5 sentences describing what Table 3 and the two figures show. Report the
-numbers only; save the interpretation for §5.]**
+The DCGAN scores better than the VAE on every metric except interpolation CV (Table 3). Its
+FID is 16× lower in the classifier space (1.29 vs. 20.7) and 4× lower in the Inception space
+(13.3 vs. 56.9). Its precision and recall (0.85 / 0.85) are close to the real-data baseline
+(0.90 / 0.89), while the VAE reaches 0.70 precision but only 0.49 recall (Figure 2). Both
+models produce all 10 classes, but the VAE's class distribution is 10× further from the real
+one (KL 0.22 vs. 0.022). The DCGAN's Laplacian variance and HF ratio are within 4% of the real
+images; the VAE keeps about a quarter of the real edge energy and a third of the
+high-frequency energy, visible as blur in Figure 1.
 
 ### 4.2 Training dynamics (E2)
 
-![FID-classifier (left) and recall (right) during training: mean over seeds, band = min–max. The loss curves are in `results/training_curves.png`.](../results/learning_curve.png){width=60%}
+The DCGAN's FID-clf falls fast until epoch 15 (11.3 → 2.6) and then slowly (1.5 at epoch 30).
+The VAE improves more slowly and is **still improving at epoch 30** (22.3 → 21.1 over the
+last 5 epochs; Figure 3). To test whether this budget is fair, we trained VAE seed 0 for 60
+epochs: FID-clf fell only from 21.1 to 18.4 (recall 0.49 → 0.52, Laplacian variance
+0.039 → 0.044), closing 14% of the gap to the DCGAN, so we kept 30 epochs. The min–max
+bands are narrow for both models, and the discriminator never overpowered the generator: in
+every epoch of all seeds $D(G(z))$ stayed in [0.17, 0.32] and $D(x)$ in [0.68, 0.83].
 
-**[FILL IN: Did FID stop improving before epoch 30, so the budget was sufficient? Which model
-varies more between seeds (width of the band)? Did $D(G(z))$ ever collapse to 0?]**
+![**Figure 3.** FID-classifier (left) and recall (right) during training: mean over seeds, band = min–max. The loss curves are in `results/training_curves.png`.](../results/learning_curve.png){width=46%}
 
 ### 4.3 Ablations (E3, E4)
 
-![Effect of the latent size $d$ on both models.](../results/ablation_latent_dim.png){width=80%}
+| FID-clf / recall | $d=8$ | $d=32$ | $d=128$ |
+|---|---|---|---|
+| VAE | 19.7 / 0.40 | 20.7 / 0.49 | 22.5 / 0.49 |
+| DCGAN | 1.19 / 0.82 | 1.29 / 0.85 | 2.04 / 0.85 |
 
-<!-- Optional if there is room: ../results/ablation_beta.png (effect of β on the VAE). -->
+: **Table 4.** Latent-size ablation.
 
+**Latent size (Table 4).** The ranking never changes. The only clear effect is that $d=8$
+lowers the VAE's recall (0.40 vs. 0.49) and PSNR (21.3 vs. 22.4 dB); other differences are
+within the seed noise of E1.
 
-**[FILL IN: one sentence per ablation with numbers from `results/ablation_latent_dim.md` and
-`results/ablation_beta.md`. Expected direction to check: larger β → blurrier samples (lower
-Laplacian variance) but a smoother latent space. Is that what happened?]**
+| β | FID-clf ↓ | Prec. ↑ | Recall ↑ | Lapl. var | Interp. CV ↓ | Recon PSNR ↑ |
+|---|---|---|---|---|---|---|
+| 0.5 | 22.0 | 0.64 | **0.61** | **0.041** | **0.45** | **23.4** |
+| 1 | **20.7** | 0.70 | 0.49 | 0.038 | 0.51 | 22.4 |
+| 4 | 24.0 | **0.72** | 0.14 | 0.028 | 0.63 | 20.1 |
+
+: **Table 5.** KL-weight ablation for the VAE (real Laplacian variance: 0.150).
+
+**KL weight (Table 5).** As expected, a larger β makes the samples blurrier (Laplacian
+variance 0.041 → 0.028) and the reconstructions worse. It also moves the VAE along the
+precision–recall trade-off: precision rises slightly (0.64 → 0.72) while recall collapses
+(0.61 → 0.14). Contrary to our expectation, the latent space did **not** become smoother: the
+interpolation CV rose from 0.45 to 0.63.
 
 ## 5. Analysis and discussion
 
-**H1: fidelity and sharpness.** **[FILL IN: Compare Laplacian variance and HF ratio of each
-model with the real-data value (Table 3, `sharpness.png`). Compare precision. Does FID agree
-in both feature spaces? Verdict: supported / not supported / mixed. Explain *why* using §2.1
-(squared error → conditional mean → blur) and §2.2 (D detects blur).]**
+**H1: fidelity and sharpness. Supported.** The DCGAN's edge statistics match the real images
+(Laplacian variance 0.146 vs. 0.150, HF ratio 0.100 vs. 0.104) without exceeding them, so its
+sharpness is real detail rather than noise. Precision and FID agree in both feature spaces.
+This is what §2 predicts: the squared-error loss makes the VAE decoder output a conditional
+*mean*, which erases any detail that differs between the plausible images behind a code,
+whereas a CNN discriminator easily detects missing high frequencies and pushes the generator
+to produce them. E4 confirms the mechanism: a stronger KL means more averaging and less
+sharpness.
 
-**H2: diversity, mode coverage and stability.** **[FILL IN: Compare recall, modes covered
-and class KL (`mode_coverage.png`). Which classes does each model over- or under-produce?
-Compare the seed-to-seed standard deviation and the training curves. Verdict and *why*
-(the GAN is never penalised for missing data).]**
+**H2: diversity, mode coverage and stability. Not supported**, which is our most interesting
+result. The DCGAN does not drop modes: every class makes up 6–13% of its samples (ideal 10%),
+and its recall is close to the real baseline. The VAE produces all 10 classes but unevenly:
+too many pullovers (25%) and ankle boots (18%), too few coats (2%) and sandals (5%). These
+pairs differ mainly in *fine detail* (a coat is a pullover with a zip; a sandal is an ankle
+boot with gaps between the straps), so once blur removes the detail, the evaluation CNN labels
+the sample as the plainer class. Blur also explains the low recall. Recall asks whether each
+real image lies within the k-NN ball of some generated sample, and real images defined by
+texture or thin structures have no blurry counterpart nearby. In a learned feature space,
+blur therefore costs **diversity as well as fidelity**. Nor was the GAN less stable: the
+relative seed-to-seed std of FID is 3–6% for both models, and $D$ never overpowered $G$
+(§4.2). Mode collapse simply did not occur on this balanced dataset with the DCGAN recipe.
 
-**H3: latent smoothness.** **[FILL IN: Interpolation CV of both models, plus what
-`qualitative_interpolation.png` shows (gradual morphing vs. sudden jumps). Verdict and why
-(the KL term makes nearby codes decode to similar images).]**
+**H3: latent smoothness. Supported, with a caveat.** The VAE's interpolation steps are more
+even (CV 0.51 vs. 0.69). In `qualitative_interpolation.png` the VAE paths morph gradually
+(trousers widen into a dress), while several DCGAN paths stay almost constant and then jump in
+the last frames (a sneaker turns into trousers). The KL term makes the posteriors of similar
+images overlap, so nearby codes decode to similar images; the GAN loss never constrains what
+lies *between* two codes. The caveat is E4: a larger β raised the CV, perhaps because a
+strong KL switches off most latent dimensions, so the output barely changes inside a class and
+then jumps at a class boundary (one seed, so this remains a hypothesis).
 
 **Successes and failures.**
 
-![Most (top) and least (bottom) confident samples according to the evaluation classifier.](../results/qualitative_success_failure.png){width=65%}
+![**Figure 4.** Most (top) and least (bottom) confident samples according to the evaluation classifier.](../results/qualitative_success_failure.png){width=46%}
 
-**[FILL IN: Describe the failure cases of each model. Already observed for the VAE (seed 0):
-its least-confident samples are blurry *blends of two classes* (e.g. half shirt, half bag),
-which is exactly the averaging effect of §2.1. What do the GAN's failures look like:
-artefacts, distorted shapes, or repeated items? Is the memorisation (NN) ratio close to 1 for
-both models, i.e. no copying of training images (`qualitative_nearest_neighbors.png`)?]**
+The two models succeed on different classes (Figure 4, top): the VAE on trousers, whose
+silhouette survives blur, and the DCGAN on bags and high-heeled sandals, exactly the
+fine-structured classes the VAE under-produces. The VAE's failures are blurry *blends of two
+classes* (half shirt, half bag): the averaging of §2.1 made visible. The DCGAN's failures are
+sharp but wrong: high-frequency texture artefacts and shapes halfway between shirt, dress and
+coat, with no repeated items. Neither model copies its training data (NN ratio 1.00 for the
+VAE, 1.07 for the DCGAN). The β = 4 VAE's 0.80 looks like memorisation, but a
+blurry average image is simply close in pixel distance to many training images.
 
 **Limitations.**
 
-* FID-Inception is computed on 32×32 grayscale images, far from Inception's ImageNet training
-  data. Even real-vs-real precision/recall in that space is only about 0.78 (vs. 0.90 with
-  our classifier). We therefore **[FILL IN: decision 3 in the plan, i.e. which FID we lead
-  with]**.
-* The evaluation classifier is imperfect (90.7% accuracy), so ambiguous samples can be
-  mislabelled, which affects the mode-coverage numbers.
-* The GAN has no encoder, so reconstruction quality is measured for the VAE only.
-* We use one small architecture, one dataset and 30 epochs. Optimiser settings follow each
-  paper's defaults and were not tuned. The conclusions may not transfer to larger models or
-  to colour images.
+* FID-Inception runs on 32×32 grayscale images, far from ImageNet; even real-vs-real
+  precision/recall there is only 0.78 (0.90 with our classifier). Both spaces rank the models
+  the same way, so we **lead with the classifier space** and report FID-Inception for
+  comparability.
+* The evaluation classifier (90.7% accuracy) is less confident on blurry samples (mean
+  confidence 0.79 VAE, 0.88 DCGAN, 0.93 real), so class coverage partly measures blur.
+* The VAE was still improving slowly at epoch 30 (§4.2); the ablations use one seed; the GAN
+  has no encoder, so reconstruction is measured for the VAE only.
+* One small architecture and dataset, and untuned paper-default optimisers: the results may
+  not transfer to larger models or colour images.
 
 ## 6. Conclusion
 
-**[FILL IN: 3–4 sentences. The answer to the research question in one sentence; which
-hypotheses held; the most interesting thing you learned (e.g. how much one design choice,
-such as sum vs. mean in the VAE loss, changes the result); one concrete next step (e.g.
-WGAN-GP for mode collapse, or CIFAR-10).]**
+With the same network, data and budget, the DCGAN beats the VAE on Fashion-MNIST in fidelity
+**and** diversity (FID-clf 1.3 vs. 20.7, recall 0.85 vs. 0.49); the VAE keeps a smoother
+latent space and an encoder. H1 and H3 held, but H2 did not: the GAN never collapsed, and the
+VAE's blur cost it coverage as well as sharpness, because in a learned feature space blur and
+diversity are not independent. β moves the VAE along the precision–recall trade-off but, for
+the values we tried, never towards the DCGAN. A natural next step is to remove the blur at its
+source (a learned decoder variance or a perceptual loss) and test whether the VAE's recall
+recovers.
 
 ## References
 

@@ -1,0 +1,30 @@
+{
+  "run": "real_baseline_fashion_mnist",
+  "model": "real",
+  "dataset": "fashion_mnist",
+  "n_samples": 10000,
+  "eval_classifier_accuracy": 0.9067,
+  "fid_classifier": 0.03391497054104775,
+  "precision_classifier": 0.9032999873161316,
+  "recall_classifier": 0.892799973487854,
+  "fid_inception": 2.3958459839436728,
+  "precision_inception": 0.7824000120162964,
+  "recall_inception": 0.7785000205039978,
+  "modes_covered": 10,
+  "class_kl": 0.0051042968888081386,
+  "class_histogram": [
+    0.1163,
+    0.0984,
+    0.1149,
+    0.0945,
+    0.0801,
+    0.0998,
+    0.0915,
+    0.1038,
+    0.1025,
+    0.0982
+  ],
+  "mean_confidence": 0.9344717860221863,
+  "laplacian_var": 0.1500118374824524,
+  "hf_ratio": 0.10427787899971008
+}

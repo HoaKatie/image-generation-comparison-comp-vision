@@ -1,0 +1,5 @@
+{
+  "dataset": "fashion_mnist",
+  "epochs": 8,
+  "test_accuracy": 0.9067
+}
