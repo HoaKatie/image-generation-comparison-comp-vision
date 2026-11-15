@@ -226,3 +226,8 @@ runs_smoke/
 results_smoke/
 *.pt
 .DS_Store
+
+# report build outputs (regenerate with: bash report/build.sh)
+report/report.html
+report/report.pdf
+report/report.docx

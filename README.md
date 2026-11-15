@@ -20,13 +20,14 @@ The full plan (protocol, metrics, rubric mapping, open decisions, timeline) is i
 
 | File / item | Status | What is missing |
 |---|---|---|
-| [`src/losses.py`](src/losses.py): `vae_loss()` | ❌ **TODO** | Raises `NotImplementedError`. Until it is implemented, `src/train_vae.py`, `scripts/run_main.sh`, `scripts/run_ablation.sh` and `scripts/smoke_test.sh` fail, and the 5 tests in `tests/test_losses.py` fail. Everything else passes (18/23 tests). |
-| `results/` | ❌ not created | No real experiments have been run yet. Only short smoke runs were used to check the pipeline. |
-| [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) §6 | ⚠️ open | Team decisions marked **[DECIDE]**: sum vs. mean in `vae_loss`, number of epochs, primary FID, optional extension. |
-| Report | ❌ not started | Outline and figure plan in `docs/PROJECT_PLAN.md` §9. |
+| `results/` | ❌ **not created** | The experiments have not been run yet. Run them yourselves by following [docs/RUNNING_EXPERIMENTS.md](docs/RUNNING_EXPERIMENTS.md): about 1 h for the main experiment and 45 min for the ablations. |
+| [`report/report.md`](report/report.md) §4–6 | ⚠️ **template** | §1–3 (problem, method, implementation) are written. §4–6 have **[FILL IN]** places to complete from `results/`. Team names are also still missing. |
+| [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) §6 | ⚠️ open | 3 team decisions that depend on the results: number of epochs, primary FID, optional extension. |
 
-Everything else (data, models, GAN + classifier training, evaluation, analysis, scripts, tests)
-is implemented and was checked end-to-end on short runs.
+Everything else is implemented and tested (`python -m pytest`, 49 tests): data, models,
+`vae_loss`, training, evaluation, the real-vs-real baseline, analysis, and the scripts. The
+whole pipeline was checked end to end, both on a toy dataset (tests) and on Fashion-MNIST
+(smoke test).
 
 ## Fair comparison by construction
 
@@ -52,23 +53,25 @@ The code runs on CUDA, Apple-silicon (MPS) or CPU and picks the device automatic
 Fashion-MNIST (~30 MB) downloads on first use. The FID Inception weights (~100 MB) download on
 the first full evaluation.
 
-## ⚠️ Team TODO before the first run
+## Key design choice: the VAE loss
 
-`vae_loss` in [src/losses.py](src/losses.py) is intentionally left for the team to implement
-(about 5 lines). It is the part of the project most likely to come up in the Q&A. The comments
-in the function describe what it needs and a design decision to discuss. It is done when this passes:
-
-```bash
-python -m pytest tests/test_losses.py
-```
+`vae_loss` in [src/losses.py](src/losses.py) sums the squared error over the pixels of each
+image (a Gaussian decoder with fixed variance). It does not average it. Averaging would make
+the KL term about 1000× stronger (1024 pixels vs. 32 latent dimensions), which is a hidden
+β ≈ 1000 and makes the samples much blurrier. With the sum, `beta` is the only weight on the
+KL. This is the part of the project most likely to come up in the Q&A. Its tests:
+`python -m pytest tests/test_losses.py`.
 
 ## Quick check (~2 min)
 
 ```bash
 bash scripts/smoke_test.sh          # tests + tiny runs; writes runs_smoke/ and results_smoke/
 ```
-
+                                                            
 ## Reproduce the experiments
+
+Step-by-step guide (time estimates, splitting seeds across teammates, Colab,
+troubleshooting): [docs/RUNNING_EXPERIMENTS.md](docs/RUNNING_EXPERIMENTS.md).
 
 ```bash
 bash scripts/run_main.sh            # VAE vs DCGAN, seeds 0 1 2  -> runs/, results/
@@ -84,6 +87,7 @@ Each script can also be run on its own. Every script takes the same `--config` /
 
 ```bash
 python -m src.train_classifier --config configs/classifier.yaml           # once per dataset
+python -m src.real_baseline                                                # real-vs-real reference row
 python -m src.train_vae --config configs/vae.yaml --set seed=1 beta=4
 python -m src.train_gan --config configs/gan.yaml --set seed=1 latent_dim=8
 python -m src.evaluate  --config configs/gan.yaml --set seed=1             # full metrics + figures
@@ -110,13 +114,16 @@ configs/            shared.yaml (fairness) + vae.yaml, gan.yaml, classifier.yaml
 src/
   data.py           Fashion-MNIST / MNIST / CIFAR-10 -> 32x32 in [-1, 1]
   models/           networks.py (shared blocks), vae.py, gan.py, classifier.py (evaluation only)
-  losses.py         VAE ELBO (team TODO) and GAN losses
+  losses.py         VAE negative ELBO and GAN losses
   train_vae.py, train_gan.py, train_classifier.py
   metrics.py        FID, precision/recall, mode coverage, sharpness, PSNR, NN, latent smoothness
   evaluate.py       all metrics + qualitative figures for one run
+  real_baseline.py  same metrics on real train vs. test images (best achievable scores)
   analysis.py       aggregates all runs into tables and figures
 scripts/            run_main.sh, run_ablation.sh, smoke_test.sh
-tests/              shape/fairness checks, loss acceptance tests, metric sanity checks
+tests/              shape/fairness checks, loss tests, metric sanity checks
+results/            report tables + figures (created by src.analysis, then committed)
+report/report.md    project report (pandoc -> PDF/DOCX, see the comment at its top)
 docs/PROJECT_PLAN.md
 ```
 

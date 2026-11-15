@@ -16,6 +16,11 @@ Figures:
     learning_curve.png        FID / recall over training  (needs `evaluate --all-epochs --quick`)
     training_curves.png       losses and D outputs from train_log.csv
     ablation_latent_dim.png, ablation_beta.png
+    qualitative_*.png         VAE and DCGAN evaluation grids side by side (samples, successes and
+                              failures, interpolation, nearest neighbours, reconstructions)
+
+If runs/real_baseline_<dataset>/metrics.json exists (`python -m src.real_baseline`), the main
+table gets a "Real data" row and the precision-recall plot a reference star.
 """
 import argparse
 import json
@@ -135,7 +140,7 @@ def _present(df, models=MODELS):
     return [m for m in models if m in set(df["model"])]
 
 
-def plot_precision_recall(main, out, written):
+def plot_precision_recall(main, out, written, baseline=None):
     spaces = [s for s in ("classifier", "inception")
               if f"precision_{s}" in main and main[f"precision_{s}"].notna().any()]
     if not spaces:
@@ -146,6 +151,9 @@ def plot_precision_recall(main, out, written):
             g = main[main["model"] == model]
             ax.scatter(g[f"recall_{space}"], g[f"precision_{space}"], s=45, color=COLORS[model],
                        label=LABELS[model], edgecolor="white", linewidth=1.5, zorder=3)
+        if baseline is not None and f"recall_{space}" in baseline:
+            ax.scatter(baseline[f"recall_{space}"], baseline[f"precision_{space}"], s=90, marker="*",
+                       color=MUTED, label="real data (train vs. test)", edgecolor="white", linewidth=1, zorder=3)
         ax.set(xlim=(0, 1), ylim=(0, 1), xlabel="Recall (diversity)", title=f"{space.capitalize()} features")
     axes[0][0].set_ylabel("Precision (fidelity)")
     axes[0][-1].legend(loc="lower right")
@@ -241,6 +249,61 @@ def plot_training_curves(runs_dir, main, out, written):
     _save(fig, out / "training_curves.png", written)
 
 
+QUALITATIVE_FIGURES = {
+    # output file: [(figure saved by src.evaluate, panel caption), ...]  -> one row per entry
+    "qualitative_samples.png": [("samples.png", "random samples")],
+    "qualitative_success_failure.png": [("most_confident.png", "most confident (successes)"),
+                                        ("least_confident.png", "least confident (failures)")],
+    "qualitative_interpolation.png": [("interpolation.png", "slerp interpolation, one path per row")],
+    "qualitative_nearest_neighbors.png": [("nearest_neighbors.png", "generated (top) vs. nearest train (bottom)")],
+    "qualitative_reconstructions.png": [("reconstructions.png", "test image (top) vs. reconstruction (bottom)")],
+}
+
+
+def plot_qualitative(runs_dir, main, out, written, panel_width=3.4):
+    """Put the evaluation figures of both models side by side (lowest seed of each model).
+
+    runs/ is git-ignored, so this is how the qualitative figures reach results/ and the report.
+    The grids come from fixed latent vectors (--eval-seed), so they are NOT cherry-picked.
+    """
+    picks = {}
+    for model in _present(main):
+        row = main[main["model"] == model].sort_values("seed").iloc[0]
+        eval_dir = Path(runs_dir) / row["run"] / "eval" / f"epoch_{int(row['epoch']):03d}"
+        picks[model] = (eval_dir, int(row["seed"]))
+    for name, rows in QUALITATIVE_FIGURES.items():
+        # columns = models that actually have this figure (reconstructions: VAE only)
+        cols = [m for m in picks if all((picks[m][0] / f).exists() for f, _ in rows)]
+        if not cols:
+            continue
+        images = [[plt.imread(picks[m][0] / f) for m in cols] for f, _ in rows]
+        aspect = max(img.shape[0] / img.shape[1] for row in images for img in row)
+        fig, axes = plt.subplots(len(rows), len(cols), squeeze=False,
+                                 figsize=(panel_width * len(cols), (panel_width * aspect + 0.35) * len(rows)))
+        for r, (_, caption) in enumerate(rows):
+            for c, model in enumerate(cols):
+                ax = axes[r][c]
+                ax.imshow(images[r][c], interpolation="nearest")
+                ax.set_axis_off()
+                ax.set_title(f"{LABELS[model]} (seed {picks[model][1]}): {caption}", fontsize=8)
+        _save(fig, out / name, written)
+
+
+def load_baseline(runs_dir, dataset):
+    path = Path(runs_dir) / f"real_baseline_{dataset}" / "metrics.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
+def baseline_row(baseline, metrics):
+    row = {"model": "Real data (train vs. test)", "seeds": "–"}
+    for metric in metrics:
+        row[METRIC_NAMES.get(metric, metric)] = f"{baseline[metric]:.3g}" if metric in baseline else "–"
+    return row
+
+
 def plot_ablation(df, x_key, panels, title, path, written, log_x=True):
     models = _present(df)
     fig, axes = plt.subplots(1, len(panels), figsize=(3.2 * len(panels), 2.8), squeeze=False)
@@ -292,17 +355,23 @@ def main():
 
         # ---- Main comparison --------------------------------------------- #
         main_df = final[default_mask(final, default_z, default_beta)]
+        baseline = load_baseline(args.runs, dataset)
         if not main_df.empty:
+            table = mean_std_table(main_df, ["model"], list(METRIC_NAMES))
+            if baseline is not None:
+                table = pd.concat([table, pd.DataFrame([baseline_row(baseline, METRIC_NAMES)])], ignore_index=True)
             write_markdown(
-                mean_std_table(main_df, ["model"], list(METRIC_NAMES)), dout / "main_results.md",
+                table, dout / "main_results.md",
                 f"Main results: {dataset}, latent_dim={default_z}, VAE beta={default_beta:g}",
-                f"Mean ± std over seeds. Real-data reference: Laplacian var = "
-                f"{main_df['laplacian_var_real'].mean():.3g}, HF ratio = {main_df['hf_ratio_real'].mean():.3g}. "
-                f"Evaluation classifier test accuracy = {main_df['eval_classifier_accuracy'].iloc[0]:.3f}.",
+                f"Mean ± std over seeds. The last row runs the same metrics on 10,000 real TRAINING images "
+                f"instead of generated ones (`python -m src.real_baseline`): the best score a perfect generator "
+                f"could expect. Evaluation classifier test accuracy = "
+                f"{main_df['eval_classifier_accuracy'].iloc[0]:.3f}.",
                 written)
-            plot_precision_recall(main_df, dout, written)
+            plot_precision_recall(main_df, dout, written, baseline)
             plot_sharpness(main_df, dout, written)
             plot_training_curves(args.runs, main_df, dout, written)
+            plot_qualitative(args.runs, main_df, dout, written)
             try:
                 from src.data import class_names
                 labels = class_names(dataset, shared["data_root"])

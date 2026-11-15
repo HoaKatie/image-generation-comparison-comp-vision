@@ -17,21 +17,24 @@ def vae_loss(x, x_recon, mu, logvar, beta=1.0):
         `loss` is what we backpropagate; `recon` and `kl` are logged separately so
         the training curves show the trade-off between them.
     """
-    # TODO(team): implement the VAE objective (~5 lines). Acceptance tests: tests/test_losses.py
+    batch = x.size(0)
+
+    # Reconstruction: squared error SUMMED over all pixels of an image, then averaged
+    # over the batch. This is -log p(x|z) of a Gaussian decoder with a fixed variance
+    # (sigma^2 = 1/2 on the [-1, 1] scale), up to an additive constant.
     #
-    #   1. recon: how far x_recon is from x (per image, then averaged over the batch).
-    #   2. kl:    closed-form KL( N(mu, sigma^2) || N(0, I) ), summed over latent dims:
-    #               KL = -0.5 * sum(1 + logvar - mu^2 - exp(logvar))
-    #             then averaged over the batch.
-    #   3. loss = recon + beta * kl
-    #
-    # Design decision to discuss as a team (and justify in the report):
-    #   SUM vs MEAN over pixels for the reconstruction term. A 32x32 image has
-    #   1024 pixel terms, the KL has only latent_dim terms. Taking the mean over
-    #   pixels makes the KL ~1000x stronger relative to reconstruction, which
-    #   changes how blurry the samples are -- i.e. it changes the very thing we
-    #   are measuring. Summing corresponds to a Gaussian decoder with fixed variance.
-    raise NotImplementedError("vae_loss is a team TODO -- see the comments in src/losses.py")
+    # Why SUM and not MEAN over pixels: a 32x32 image gives 1024 pixel terms while the
+    # KL has only latent_dim terms. Averaging over pixels would silently make the KL
+    # ~1000x stronger, i.e. a hidden beta of ~1000, and the samples would be far
+    # blurrier. With the sum, the ELBO is the real one and `beta` is the ONLY knob for
+    # the reconstruction/KL trade-off, which is what the beta ablation varies.
+    recon = F.mse_loss(x_recon, x, reduction="sum") / batch
+
+    # Closed-form KL( N(mu, diag(sigma^2)) || N(0, I) ) (Kingma & Welling 2014, App. B),
+    # summed over latent dims, averaged over the batch.
+    kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / batch
+
+    return recon + beta * kl, recon, kl
 
 
 def discriminator_loss(real_logits, fake_logits):

@@ -1,8 +1,8 @@
-"""Acceptance tests for the losses.
+"""Tests for the losses.
 
-The vae_loss tests FAIL until the team implements the TODO in src/losses.py.
-They pin down the required behaviour without deciding the open design choice
-(sum vs mean over pixels for the reconstruction term).
+They pin down the required behaviour of vae_loss (closed-form KL, beta only
+scales the KL, scalar outputs) independently of the sum-vs-mean design choice
+for the reconstruction term, which is explained in src/losses.py.
 """
 import pytest
 import torch
