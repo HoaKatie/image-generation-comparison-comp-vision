@@ -10,9 +10,16 @@ PY=${PYTHON:-python}
 SEEDS=${SEEDS:-"0 1 2"}
 DATASET=$("$PY" -c "from src.config import load_config; print(load_config('configs/shared.yaml')['dataset'])")
 
-# The evaluation classifier is trained once and shared by every evaluation.
+# The evaluation classifier is trained once and shared by every evaluation. Teammates who split
+# the seeds must all copy the SAME runs/classifier_<dataset>/ folder before running this script,
+# otherwise their classifier-space metrics are not comparable.
 if [ ! -f "runs/classifier_${DATASET}/classifier.pt" ]; then
   "$PY" -m src.train_classifier --config configs/classifier.yaml
+  rm -rf "runs/real_baseline_${DATASET}"  # it was computed with the previous classifier
+fi
+# Real-vs-real reference row for the main table (the best score a perfect generator could get).
+if [ ! -f "runs/real_baseline_${DATASET}/metrics.json" ]; then
+  "$PY" -m src.real_baseline
 fi
 
 for seed in $SEEDS; do

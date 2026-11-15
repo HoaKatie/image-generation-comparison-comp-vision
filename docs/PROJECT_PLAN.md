@@ -52,8 +52,10 @@ rewards analysis, not "winning".
 | Recon PSNR | reconstruction quality | ↑ | VAE only. The GAN has no encoder; state this as a limitation. |
 
 Sanity checks for every metric are in `tests/test_metrics.py`. Mention them in the report as
-evidence that the evaluation measures what we claim. Real-vs-real check on the test set:
-classifier-FID ≈ 0.1, precision/recall ≈ 0.91.
+evidence that the evaluation measures what we claim. The real-vs-real baseline
+(`src/real_baseline.py`: 10k train vs. 10k test images) gives the best achievable scores.
+A first run gave classifier space: FID 0.03, P/R 0.90/0.89; Inception space: FID 2.4,
+P/R 0.78/0.78. It appears as the last row of `results/main_results.md`.
 
 ## 5. Rubric mapping (10 marks)
 
@@ -68,9 +70,10 @@ classifier-FID ≈ 0.1, precision/recall ≈ 0.91.
 
 ## 6. Open decisions **[DECIDE]**
 
-1. **`vae_loss` reconstruction reduction: sum or mean over pixels?** This changes the effective
-   KL weight and therefore the blur. Recommendation: sum (Gaussian decoder with fixed variance);
-   β then controls the trade-off explicitly. Whatever we choose, we justify it in the report.
+1. ~~**`vae_loss` reconstruction reduction: sum or mean over pixels?**~~ **Decided: sum**
+   (Gaussian decoder with fixed variance), so β is the only weight on the KL. The
+   justification is in `src/losses.py` and report §2.1. Everyone should be able to explain it
+   in the Q&A: mean over 1024 pixels = a hidden β ≈ 1000 → much blurrier samples.
 2. **Epochs.** Default is 30. Check the learning curves after the first seed. If FID is still
    dropping, increase the epochs for *both* models.
 3. **Primary FID.** Inception (standard) or classifier (domain-specific)? We report both, but
@@ -85,7 +88,7 @@ member (guidelines §10).
 
 | Member | Main responsibility | Also |
 |---|---|---|
-| A | VAE: `vae_loss` TODO, VAE runs, β ablation | report §2 Method (VAE) |
+| A | VAE: be able to derive `vae_loss` (ELBO, KL, sum vs. mean), VAE runs, β ablation | report §2 Method (VAE) |
 | B | GAN: GAN runs, latent-dim ablation, training-stability analysis | report §2 Method (GAN) |
 | C | Evaluation: metrics review, analysis figures, failure-case selection | report §4–5 |
 
