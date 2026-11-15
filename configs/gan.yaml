@@ -1,0 +1,6 @@
+base: shared.yaml
+model: gan
+
+# Optimiser settings from the DCGAN paper (Radford et al., 2016)
+lr: 2.0e-4
+adam_beta1: 0.5

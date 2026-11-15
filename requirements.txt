@@ -1,0 +1,11 @@
+# Tested with Python 3.12 and the versions in brackets.
+torch>=2.2                # [2.15.0]
+torchvision>=0.17         # [0.29.2]
+torchmetrics[image]>=1.4  # [1.9.0]  FID Inception-v3 network (weights via torch-fidelity)
+torch-fidelity>=0.3       # [0.4.0]
+numpy                     # [2.5.4]
+scipy                     # [1.18.1]
+matplotlib                # [3.11.2]
+pandas                    # [3.1.1]
+pyyaml                    # [6.0.3]
+pytest                    # [9.2.0]

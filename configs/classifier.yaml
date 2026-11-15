@@ -1,0 +1,8 @@
+# Evaluation-only classifier (NOT one of the compared methods).
+# It is trained on real images and used to measure mode coverage and to provide
+# a domain-specific feature space for FID / precision / recall.
+base: shared.yaml
+model: classifier
+
+epochs: 8
+lr: 1.0e-3

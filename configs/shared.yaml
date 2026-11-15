@@ -1,0 +1,18 @@
+# Settings shared by BOTH generative models.
+# Changing a value here changes it for the VAE and the GAN at the same time,
+# which is how we keep the comparison fair (same data, architecture, budget).
+
+dataset: fashion_mnist   # mnist | fashion_mnist | cifar10
+data_root: data
+output_dir: runs
+
+latent_dim: 32
+base_channels: 64        # width of the shared conv architecture (src/models/networks.py)
+batch_size: 128
+epochs: 30               # same training budget for both models
+seed: 0
+
+save_every: 5            # keep a checkpoint every N epochs (used for learning curves)
+num_workers: 2
+device: auto             # auto | cpu | cuda | mps
+subset: null             # e.g. 2000 for a quick smoke test; null = full training set
