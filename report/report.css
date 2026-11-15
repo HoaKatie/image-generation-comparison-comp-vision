@@ -4,6 +4,7 @@ h1.title { font-size: 16pt; margin: 0 0 4pt; text-align: center; }
 p.subtitle, p.author { text-align: center; margin: 2pt 0; }
 h2 { font-size: 13pt; margin: 12pt 0 4pt; } h3 { font-size: 11.5pt; margin: 8pt 0 3pt; }
 p, li { margin: 3pt 0; text-align: justify; }
+ul, ol { margin: 3pt 0; padding-left: 18pt; } li { margin: 1pt 0; }
 table { border-collapse: collapse; font-size: 9pt; margin: 6pt auto; }
 th, td { border-top: 1px solid #999; border-bottom: 1px solid #999; padding: 2pt 5pt; }
 caption { caption-side: bottom; font-size: 9pt; text-align: left; }
@@ -12,3 +13,6 @@ figcaption { font-size: 9pt; text-align: left; }
 blockquote { margin: 6pt 20pt; font-style: italic; }
 header#title-block-header { margin-bottom: 8pt; }
 code { font-size: 9pt; }
+/* Never split a table or figure across pages, never leave a heading alone at a page bottom. */
+table, figure, tr { break-inside: avoid; }
+h2, h3 { break-after: avoid; }

@@ -74,8 +74,11 @@ P/R 0.78/0.78. It appears as the last row of `results/main_results.md`.
    (Gaussian decoder with fixed variance), so β is the only weight on the KL. The
    justification is in `src/losses.py` and report §2.1. Everyone should be able to explain it
    in the Q&A: mean over 1024 pixels = a hidden β ≈ 1000 → much blurrier samples.
-2. **Epochs.** Default is 30. Check the learning curves after the first seed. If FID is still
-   dropping, increase the epochs for *both* models.
+2. ~~**Epochs.**~~ **Decided: keep 30.** The VAE's FID was still dropping slowly at epoch 30,
+   so we trained VAE seed 0 for 60 epochs as a check (`runs/epoch_check/`, commands in
+   `docs/RUNNING_EXPERIMENTS.md` §3). FID-clf went from 21.1 to 18.4, recall from 0.49 to 0.52
+   and Laplacian variance from 0.039 to 0.044. That closes only 14% of the gap to the DCGAN
+   (FID-clf 1.3) and changes no conclusion. Report §4.2 states this.
 3. **Primary FID.** Inception (standard) or classifier (domain-specific)? We report both, but
    the text should lead with one.
 4. **Optional extension.** Pick one if time allows: WGAN-GP (does it fix mode collapse?) *or*

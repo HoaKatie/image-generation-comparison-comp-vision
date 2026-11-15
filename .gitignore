@@ -219,15 +219,24 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# ---- Project outputs (large / regenerable) ----
+# ---- Project outputs ----
 data/
-runs/
 runs_smoke/
 results_smoke/
-*.pt
 .DS_Store
 
-# report build outputs (regenerate with: bash report/build.sh)
+# runs/ IS committed so the whole team can inspect every run (configs, loss logs, per-epoch
+# samples, metrics and evaluation figures) and load the final models without retraining.
+# Left out: the Inception feature cache (rebuilt automatically in ~1 min) and the
+# intermediate checkpoints (~460 MB; their learning-curve metrics are already saved in
+# eval/epoch_XXX_quick/). If `epochs` changes, update the final-checkpoint names below.
+runs/**/cache/
+*.pt
+!runs/**/classifier.pt
+!runs/*/checkpoints/epoch_030.pt
+!runs/epoch_check/*/checkpoints/epoch_060.pt
+
+# report build outputs: report.pdf IS committed so everyone can read the report without
+# pandoc + Chrome. Rebuild it (bash report/build.sh) whenever report.md changes.
 report/report.html
-report/report.pdf
 report/report.docx

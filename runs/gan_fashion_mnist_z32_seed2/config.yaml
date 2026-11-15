@@ -1,0 +1,15 @@
+adam_beta1: 0.5
+base_channels: 64
+batch_size: 128
+data_root: data
+dataset: fashion_mnist
+device: auto
+epochs: 30
+latent_dim: 32
+lr: 0.0002
+model: gan
+num_workers: 2
+output_dir: runs
+save_every: 5
+seed: 2
+subset: null
