@@ -4,6 +4,9 @@ Follow the steps in order. Times were measured on an Apple-silicon laptop (MPS).
 NVIDIA GPU is similar or faster. A CPU-only machine is several times slower, so use Colab
 (section 7) if you do not have a GPU.
 
+New to the project? Read [PIPELINE.md](PIPELINE.md) first. It explains what each step below
+does and why, and points to the saved outputs of our own runs.
+
 ## 0. Setup (once)
 
 ```bash

@@ -13,8 +13,37 @@ and a **Deep Convolutional GAN (DCGAN)**, on Fashion-MNIST.
 | **H2** | The VAE covers the data distribution better (higher recall, less mode collapse) and trains more stably. | recall, class histogram, variance over seeds, D(x)/D(G(z)) curves |
 | **H3** | The VAE has a smoother latent space. | interpolation figures, interpolation step CV |
 
-The full plan (protocol, metrics, rubric mapping, open decisions, timeline) is in
-[docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md).
+## Start here
+
+New to the repo? Read in this order. It takes about 30 minutes and needs no GPU, because
+every result is already committed.
+
+| # | Read | To learn |
+|---|---|---|
+| 1 | This README | the question, the results at a glance, how fairness is enforced |
+| 2 | [docs/PIPELINE.md](docs/PIPELINE.md) | **how the project works, step by step**: what each script does, why, and which saved output to look at |
+| 3 | [`results/`](results/) | the figures; start with `qualitative_samples.png` and `precision_recall.png` |
+| 4 | [`runs/`](runs/) | one folder per run: its config, loss log, samples after every epoch, evaluation figures |
+| 5 | [report/report.pdf](report/report.pdf) | the full write-up, with the explanation of every result |
+| 6 | [docs/RUNNING_EXPERIMENTS.md](docs/RUNNING_EXPERIMENTS.md) | how to re-run or extend the experiments |
+| 7 | [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) | protocol, metric definitions, rubric mapping, team decisions, task split |
+
+## Results at a glance
+
+Mean over 3 seeds. Full table: [results/main_results.md](results/main_results.md).
+
+| | DCGAN | VAE | Real data |
+|---|---|---|---|
+| FID, classifier features ↓ | **1.29** | 20.7 | 0.03 |
+| FID, Inception features ↓ | **13.3** | 56.9 | 2.4 |
+| Precision / recall ↑ | **0.85 / 0.85** | 0.70 / 0.49 | 0.90 / 0.89 |
+| Sharpness: Laplacian variance (closest to real is best) | **0.146** | 0.038 | 0.150 |
+| Latent smoothness: interpolation CV ↓ | 0.69 | **0.51** | – |
+
+- **H1 supported.** DCGAN samples are as sharp as real images; VAE samples are blurry.
+- **H2 not supported.** The DCGAN also covers the data better and never mode-collapsed. The
+  VAE's blur costs it diversity as well as fidelity (report §5 explains why).
+- **H3 supported.** The VAE's latent space is smoother, with a caveat from the β ablation.
 
 ## 🚧 Project status: what is NOT finished yet
 
@@ -127,8 +156,8 @@ scripts/            run_main.sh, run_ablation.sh, smoke_test.sh
 tests/              shape/fairness checks, loss tests, metric sanity checks
 runs/               one folder per run: config, loss log, per-epoch samples, metrics, figures, final model
 results/            report tables + figures (created by src.analysis, then committed)
-report/report.md    project report (pandoc -> PDF/DOCX, see the comment at its top)
-docs/PROJECT_PLAN.md
+report/             report.md (source) -> report.pdf (committed) with build.sh
+docs/               PIPELINE.md (start here), RUNNING_EXPERIMENTS.md, PROJECT_PLAN.md
 ```
 
 ## References
