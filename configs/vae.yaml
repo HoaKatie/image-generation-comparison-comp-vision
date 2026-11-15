@@ -1,0 +1,5 @@
+base: shared.yaml
+model: vae
+
+lr: 1.0e-3     # Adam, standard VAE setting
+beta: 1.0      # weight on the KL term: 1.0 = standard VAE, >1 = beta-VAE (Higgins et al., 2017)

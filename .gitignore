@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---- Project outputs (large / regenerable) ----
+data/
+runs/
+runs_smoke/
+results_smoke/
+*.pt
+.DS_Store
