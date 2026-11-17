@@ -27,6 +27,7 @@ every result is already committed.
 | 5 | [report/report.pdf](report/report.pdf) | the full write-up, with the explanation of every result |
 | 6 | [docs/RUNNING_EXPERIMENTS.md](docs/RUNNING_EXPERIMENTS.md) | how to re-run or extend the experiments |
 | 7 | [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) | protocol, metric definitions, rubric mapping, team decisions, task split |
+| 8 | [demo/README.md](demo/README.md) | the **interactive demo** for the presentation: pick a category, compare both models in a window |
 
 ## Results at a glance
 
@@ -97,6 +98,15 @@ KL. This is the part of the project most likely to come up in the Q&A. Its tests
 bash scripts/smoke_test.sh          # tests + tiny runs; writes runs_smoke/ and results_smoke/
 ```
                                                             
+## Interactive demo (for the presentation)
+
+```bash
+python demo/compare_demo.py         # pick a category in the terminal -> VAE vs DCGAN window
+```
+
+Uses the committed final models, no training. Guide, options and a demo script:
+[demo/README.md](demo/README.md).
+
 ## Reproduce the experiments
 
 Step-by-step guide (time estimates, splitting seeds across teammates, Colab,
@@ -153,6 +163,7 @@ src/
   real_baseline.py  same metrics on real train vs. test images (best achievable scores)
   analysis.py       aggregates all runs into tables and figures
 scripts/            run_main.sh, run_ablation.sh, smoke_test.sh
+demo/               interactive VAE vs DCGAN comparison window for the presentation
 tests/              shape/fairness checks, loss tests, metric sanity checks
 runs/               one folder per run: config, loss log, per-epoch samples, metrics, figures, final model
 results/            report tables + figures (created by src.analysis, then committed)
