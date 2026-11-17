@@ -132,6 +132,8 @@ These numbers are from the default seed 0, and every claim below was checked at 
 | [compare_rules.py](compare_rules.py) | if/else rules that turn the stats into the table "Winner" column and the sentences |
 | [gui.py](gui.py) | the Tkinter window |
 | [test_demo.py](test_demo.py) | tests: `python -m pytest demo -q` |
+| [prompt2_output.md](prompt2_output.md) | study guide: the whole project told as a demo (pitch, VAE vs GAN, pipeline, demo script, Q&A) |
+| [prompt3_output.md](prompt3_output.md) | study guide: code structure A→Z, requirements check, simplification ideas |
 
 ## 6. Troubleshooting
 
